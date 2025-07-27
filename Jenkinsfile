@@ -1,5 +1,13 @@
 pipeline {
-    agent any    
+    agent any
+    
+    // Uncomment below when Docker is properly configured
+    // agent {
+    //     docker {
+    //         image 'node:18'
+    //         args '-v /var/run/docker.sock:/var/run/docker.sock'
+    //     }
+    // }
 
     environment {        
         DOCKER_REGISTRY = 'anusiju'  
@@ -42,12 +50,12 @@ pipeline {
                 environment name: 'NODE_AVAILABLE', value: 'false'
             }
             steps {
-                echo 'Installing Node.js...'
-                sh '''
-                    # Install Node.js if not available
-                    curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-                    sudo apt-get install -y nodejs
-                '''
+                echo 'Node.js not available - will skip Node.js dependent steps'
+                echo 'Please install Node.js on your Jenkins agent to run tests and builds'
+                script {
+                    // Mark as unstable but continue
+                    currentBuild.result = 'UNSTABLE'
+                }
             }
         }
         
@@ -60,6 +68,9 @@ pipeline {
         }
         
         stage('Install Dependencies') {
+            when {
+                environment name: 'NODE_AVAILABLE', value: 'true'
+            }
             parallel {
                 stage('Backend Dependencies') {
                     steps {
@@ -96,7 +107,10 @@ pipeline {
         
         stage('Test Backend') {
             when {
-                expression { fileExists('backend/package.json') }
+                allOf {
+                    environment name: 'NODE_AVAILABLE', value: 'true'
+                    expression { fileExists('backend/package.json') }
+                }
             }
             steps {
                 echo 'Testing backend...'
@@ -117,7 +131,10 @@ pipeline {
         
         stage('Test Frontend') {
             when {
-                expression { fileExists('frontend/package.json') }
+                allOf {
+                    environment name: 'NODE_AVAILABLE', value: 'true'
+                    expression { fileExists('frontend/package.json') }
+                }
             }
             steps {
                 echo 'Testing frontend...'
@@ -337,9 +354,10 @@ pipeline {
                 
                 try {
                     archiveArtifacts artifacts: '**/test-results.xml', allowEmptyArchive: true
-                    publishTestResults testResultsPattern: '**/test-results.xml'
+                    // Only use publishTestResults if JUnit plugin is available
+                    // publishTestResults testResultsPattern: '**/test-results.xml'
                 } catch (Exception e) {
-                    echo 'No test results to archive'
+                    echo 'No test results to archive or JUnit plugin not available'
                 }
             }
         }
