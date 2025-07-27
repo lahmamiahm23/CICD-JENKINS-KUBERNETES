@@ -140,11 +140,6 @@ pipeline {
             echo '⚠️ Check the logs above for error details.'
         }
 
-        always {
-            node {
-                echo '🧹 Cleaning up...'
-                sh 'docker system prune -f || true'
-            }
-        }
+        
     }
 }
