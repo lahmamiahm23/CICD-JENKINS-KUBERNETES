@@ -1,5 +1,10 @@
 pipeline {
-    agent any
+    agent {
+        docker {
+            image 'node:18'
+            args '-u root:root' 
+        }
+    }
     
     environment {        
         DOCKER_REGISTRY = 'anusiju'  
