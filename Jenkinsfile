@@ -1,13 +1,5 @@
 pipeline {
-    agent {
-        // Use any available agent instead of Docker if Docker isn't available
-        any
-        // Uncomment below when Docker is properly configured
-        // docker {
-        //     image 'node:18'
-        //     args '-v /var/run/docker.sock:/var/run/docker.sock'
-        // }
-    }
+    agent any    
 
     environment {        
         DOCKER_REGISTRY = 'anusiju'  
