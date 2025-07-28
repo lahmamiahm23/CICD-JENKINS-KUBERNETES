@@ -1,145 +1,116 @@
 pipeline {
     agent any
-
+    
     environment {
         DOCKER_REGISTRY = 'anusiju'
         IMAGE_TAG = "${BUILD_NUMBER}"
         KUBECONFIG_CREDENTIAL = 'kubeconfig'
-        DOCKER_CREDENTIAL = 'docker-hub-credentials'
     }
-
+    
     stages {
         stage('Checkout') {
             steps {
-                echo '📦 Checking out code...'
                 checkout scm
-                echo '✅ Code checked out successfully!'
+                echo 'Code checked out successfully'
             }
         }
-
-        stage('Test Backend') {
+        
+        stage('Install Dependencies & Test Backend') {
             steps {
-                echo '🧪 Testing backend...'
                 dir('backend') {
-                    script {
-                        docker.image('node:18').inside('-u root:root') {
-                            sh 'npm install'
-                            sh 'npm test'
-                        }
-                    }
+                    sh 'npm install'
+                    sh 'npm test'
                 }
-                echo '✅ Backend tests completed!'
             }
         }
-
-        stage('Test Frontend') {
+        
+        stage('Install Dependencies & Test Frontend') {
             steps {
-                echo '🧪 Testing frontend...'
                 dir('frontend') {
-                    script {
-                        docker.image('node:18').inside('-u root:root') {
-                            sh 'npm install'
-                            sh 'npm test -- --coverage --watchAll=false'
-                        }
-                    }
+                    sh 'npm install'
+                    sh 'npm test -- --coverage --watchAll=false'
                 }
-                echo '✅ Frontend tests completed!'
             }
         }
-
+        
         stage('Build Docker Images') {
             parallel {
                 stage('Build Backend Image') {
                     steps {
-                        echo '🐳 Building backend Docker image...'
-                        dir('backend') {
-                            script {
+                        script {
+                            dir('backend') {
                                 def backendImage = docker.build("${DOCKER_REGISTRY}/mern-backend:${IMAGE_TAG}")
-                                docker.withRegistry('https://registry.hub.docker.com', "${DOCKER_CREDENTIAL}") {
+                                docker.withRegistry('https://registry.hub.docker.com', 'docker-hub-credentials') {
                                     backendImage.push()
                                     backendImage.push('latest')
                                 }
                             }
                         }
-                        echo '✅ Backend image built and pushed!'
                     }
                 }
                 stage('Build Frontend Image') {
                     steps {
-                        echo '🐳 Building frontend Docker image...'
-                        dir('frontend') {
-                            script {
+                        script {
+                            dir('frontend') {
                                 def frontendImage = docker.build("${DOCKER_REGISTRY}/mern-frontend:${IMAGE_TAG}")
-                                docker.withRegistry('https://registry.hub.docker.com', "${DOCKER_CREDENTIAL}") {
+                                docker.withRegistry('https://registry.hub.docker.com', 'docker-hub-credentials') {
                                     frontendImage.push()
                                     frontendImage.push('latest')
                                 }
                             }
                         }
-                        echo '✅ Frontend image built and pushed!'
                     }
                 }
             }
         }
-
-        stage('Update Kubernetes Manifests') {
-            steps {
-                echo '🛠️ Updating Kubernetes deployment files...'
-                script {
-                    sh """
-                        sed -i 's|your-username/mern-backend:latest|${DOCKER_REGISTRY}/mern-backend:${IMAGE_TAG}|g' k8s/backend-deployment.yaml
-                        sed -i 's|your-username/mern-frontend:latest|${DOCKER_REGISTRY}/mern-frontend:${IMAGE_TAG}|g' k8s/frontend-deployment.yaml
-                    """
-                }
-                echo '✅ Kubernetes manifests updated!'
-            }
-        }
-
+        
         stage('Deploy to Kubernetes') {
             steps {
-                echo '🚀 Deploying to Kubernetes...'
                 script {
-                    withKubeConfig([credentialsId: "${KUBECONFIG_CREDENTIAL}"]) {
-                        sh 'kubectl apply -f k8s/mongo-deployment.yaml || true'
-                        sh 'kubectl apply -f k8s/backend-deployment.yaml'
-                        sh 'kubectl apply -f k8s/frontend-deployment.yaml'
-
-                        sh 'kubectl rollout status deployment/backend-deployment --timeout=300s'
-                        sh 'kubectl rollout status deployment/frontend-deployment --timeout=300s'
+                    // Update image tags in deployment files
+                    sh """
+                        sed -i 's|your-registry/mern-backend:latest|${DOCKER_REGISTRY}/mern-backend:${IMAGE_TAG}|g' k8s/backend-deployment.yaml
+                        sed -i 's|your-registry/mern-frontend:latest|${DOCKER_REGISTRY}/mern-frontend:${IMAGE_TAG}|g' k8s/frontend-deployment.yaml
+                    """
+                    
+                    // Apply Kubernetes configurations
+                    withKubeConfig([credentialsId: 'kubeconfig']) {
+                        sh 'kubectl apply -f k8s/'
+                        sh 'kubectl rollout status deployment/backend-deployment'
+                        sh 'kubectl rollout status deployment/frontend-deployment'
                     }
                 }
-                echo '✅ Deployment completed!'
             }
         }
-
+        
         stage('Verify Deployment') {
             steps {
-                echo '🔍 Verifying deployment...'
                 script {
-                    withKubeConfig([credentialsId: "${KUBECONFIG_CREDENTIAL}"]) {
+                    withKubeConfig([credentialsId: 'kubeconfig']) {
                         sh 'kubectl get pods'
                         sh 'kubectl get services'
+                        
+                        // Wait for services to be ready
                         sh 'kubectl wait --for=condition=ready pod -l app=backend --timeout=300s'
                         sh 'kubectl wait --for=condition=ready pod -l app=frontend --timeout=300s'
-                        sh 'kubectl get service frontend-service'
                     }
                 }
-                echo '✅ Deployment verification completed!'
             }
         }
     }
-
+    
     post {
         success {
-            echo '🎉 Pipeline completed successfully!'
-            echo '🌐 Your MERN app is now deployed to Kubernetes!'
+            echo 'Pipeline completed successfully!'
+            // You can add notifications here
         }
-
         failure {
-            echo '❌ Pipeline failed!'
-            echo '⚠️ Check the logs above for error details.'
+            echo 'Pipeline failed!'
+            // Add failure notifications
         }
-
-        
+        always {
+            // Clean up
+            sh 'docker system prune -f'
+        }
     }
 }
