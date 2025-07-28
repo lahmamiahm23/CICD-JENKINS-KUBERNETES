@@ -16,7 +16,7 @@ spec:
       serviceAccountName: jenkins
       containers:
         - name: jenkins
-          image: jenkins/jenkins:lts
+          image: anusiju/jenkins-with-node-docker:latest  
           securityContext:
             runAsUser: 0
           ports:
@@ -27,13 +27,6 @@ spec:
           volumeMounts:
             - name: jenkins-home
               mountPath: /var/jenkins_home
-          command:
-            - bash
-            - "-c"
-            - |
-              apt-get update && \
-              apt-get install -y docker.io nodejs npm && \
-              exec /usr/bin/tini -- /usr/local/bin/jenkins.sh
       volumes:
         - name: jenkins-home
           persistentVolumeClaim:
