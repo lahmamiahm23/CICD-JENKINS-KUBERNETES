@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     tools {
-        nodejs "NodeJS_18"   // Make sure you configure this in Jenkins UI
+        nodejs "NodeJS_18"   // Ensure NodeJS tool is configured in Jenkins
     }
 
     environment {
@@ -14,7 +14,9 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                checkout scm
+                git branch: 'main',
+                    url: 'https://github.com/CodeEaseWithAnu/CI-CD-Jenkins-Pipeline.git',
+                    credentialsId: 'github-credentials'
                 echo 'Code checked out successfully'
             }
         }
