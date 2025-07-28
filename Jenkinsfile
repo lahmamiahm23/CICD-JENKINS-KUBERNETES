@@ -1,12 +1,16 @@
 pipeline {
     agent any
-    
+
+    tools {
+        nodejs "NodeJS_18"   // Make sure you configure this in Jenkins UI
+    }
+
     environment {
         DOCKER_REGISTRY = 'anusiju'
         IMAGE_TAG = "${BUILD_NUMBER}"
         KUBECONFIG_CREDENTIAL = 'kubeconfig'
     }
-    
+
     stages {
         stage('Checkout') {
             steps {
@@ -14,7 +18,7 @@ pipeline {
                 echo 'Code checked out successfully'
             }
         }
-        
+
         stage('Install Dependencies & Test Backend') {
             steps {
                 dir('backend') {
@@ -23,7 +27,7 @@ pipeline {
                 }
             }
         }
-        
+
         stage('Install Dependencies & Test Frontend') {
             steps {
                 dir('frontend') {
@@ -32,7 +36,7 @@ pipeline {
                 }
             }
         }
-        
+
         stage('Build Docker Images') {
             parallel {
                 stage('Build Backend Image') {
@@ -63,17 +67,14 @@ pipeline {
                 }
             }
         }
-        
+
         stage('Deploy to Kubernetes') {
             steps {
                 script {
-                    // Update image tags in deployment files
                     sh """
                         sed -i 's|your-registry/mern-backend:latest|${DOCKER_REGISTRY}/mern-backend:${IMAGE_TAG}|g' k8s/backend-deployment.yaml
                         sed -i 's|your-registry/mern-frontend:latest|${DOCKER_REGISTRY}/mern-frontend:${IMAGE_TAG}|g' k8s/frontend-deployment.yaml
                     """
-                    
-                    // Apply Kubernetes configurations
                     withKubeConfig([credentialsId: 'kubeconfig']) {
                         sh 'kubectl apply -f k8s/'
                         sh 'kubectl rollout status deployment/backend-deployment'
@@ -82,15 +83,13 @@ pipeline {
                 }
             }
         }
-        
+
         stage('Verify Deployment') {
             steps {
                 script {
                     withKubeConfig([credentialsId: 'kubeconfig']) {
                         sh 'kubectl get pods'
                         sh 'kubectl get services'
-                        
-                        // Wait for services to be ready
                         sh 'kubectl wait --for=condition=ready pod -l app=backend --timeout=300s'
                         sh 'kubectl wait --for=condition=ready pod -l app=frontend --timeout=300s'
                     }
@@ -98,18 +97,15 @@ pipeline {
             }
         }
     }
-    
+
     post {
         success {
             echo 'Pipeline completed successfully!'
-            // You can add notifications here
         }
         failure {
             echo 'Pipeline failed!'
-            // Add failure notifications
         }
         always {
-            // Clean up
             sh 'docker system prune -f'
         }
     }

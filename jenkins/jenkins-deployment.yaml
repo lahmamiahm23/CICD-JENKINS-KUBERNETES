@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: jenkins-deployment
+  namespace: jenkins
 spec:
   replicas: 1
   selector:
@@ -12,68 +13,28 @@ spec:
       labels:
         app: jenkins
     spec:
-      initContainers:
-      - name: install-docker
-        image: docker:24-cli
-        command: ['sh', '-c', 'cp /usr/local/bin/docker /shared/']
-        volumeMounts:
-        - name: docker-cli
-          mountPath: /shared
+      serviceAccountName: jenkins
       containers:
-      - name: jenkins
-        image: jenkins/jenkins:2.462.3-lts
-        ports:
-        - containerPort: 8080
-        - containerPort: 50000
-        volumeMounts:
-        - name: jenkins-home
-          mountPath: /var/jenkins_home
-        - name: docker-sock
-          mountPath: /var/run/docker.sock
-        - name: docker-cli
-          mountPath: /usr/local/bin/docker
-          subPath: docker
-        env:
-        - name: JAVA_OPTS
-          value: "-Djenkins.install.runSetupWizard=false"
-        securityContext:
-          runAsUser: 0
+        - name: jenkins
+          image: jenkins/jenkins:lts
+          securityContext:
+            runAsUser: 0
+          ports:
+            - name: http-port
+              containerPort: 8080
+            - name: jnlp-port
+              containerPort: 50000
+          volumeMounts:
+            - name: jenkins-home
+              mountPath: /var/jenkins_home
+          command:
+            - bash
+            - "-c"
+            - |
+              apt-get update && \
+              apt-get install -y docker.io nodejs npm && \
+              exec /usr/bin/tini -- /usr/local/bin/jenkins.sh
       volumes:
-      - name: jenkins-home
-        persistentVolumeClaim:
-          claimName: jenkins-pvc
-      - name: docker-sock
-        hostPath:
-          path: /var/run/docker.sock
-          type: Socket
-      - name: docker-cli
-        emptyDir: {}
-
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: jenkins-service
-spec:
-  selector:
-    app: jenkins
-  ports:
-  - name: http
-    port: 8080
-    targetPort: 8080
-  - name: jnlp
-    port: 50000
-    targetPort: 50000
-  type: LoadBalancer
-
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: jenkins-pvc
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 10Gi
+        - name: jenkins-home
+          persistentVolumeClaim:
+            claimName: jenkins-pvc
