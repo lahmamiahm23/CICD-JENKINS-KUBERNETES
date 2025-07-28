@@ -12,9 +12,16 @@ spec:
       labels:
         app: jenkins
     spec:
+      initContainers:
+      - name: install-docker
+        image: docker:24-cli
+        command: ['sh', '-c', 'cp /usr/local/bin/docker /shared/']
+        volumeMounts:
+        - name: docker-cli
+          mountPath: /shared
       containers:
       - name: jenkins
-        image: jenkinsci/blueocean:latest
+        image: jenkins/jenkins:2.462.3-lts
         ports:
         - containerPort: 8080
         - containerPort: 50000
@@ -23,6 +30,9 @@ spec:
           mountPath: /var/jenkins_home
         - name: docker-sock
           mountPath: /var/run/docker.sock
+        - name: docker-cli
+          mountPath: /usr/local/bin/docker
+          subPath: docker
         env:
         - name: JAVA_OPTS
           value: "-Djenkins.install.runSetupWizard=false"
@@ -36,6 +46,8 @@ spec:
         hostPath:
           path: /var/run/docker.sock
           type: Socket
+      - name: docker-cli
+        emptyDir: {}
 
 ---
 apiVersion: v1
