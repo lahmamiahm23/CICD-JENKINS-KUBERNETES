@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: jenkins
-        image: jenkins/jenkins:lts
+        image: jenkinsci/blueocean:latest
         ports:
         - containerPort: 8080
         - containerPort: 50000
@@ -26,10 +26,8 @@ spec:
         env:
         - name: JAVA_OPTS
           value: "-Djenkins.install.runSetupWizard=false"
-        # Run as root to access docker socket
         securityContext:
           runAsUser: 0
-          runAsGroup: 0
       volumes:
       - name: jenkins-home
         persistentVolumeClaim:
