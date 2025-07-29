@@ -1,10 +1,6 @@
 pipeline {
     agent any
 
-    tools {
-        nodejs "NodeJS_18"   // Ensure NodeJS tool is configured in Jenkins
-    }
-
     environment {
         DOCKER_REGISTRY = 'anusiju'
         IMAGE_TAG = "${BUILD_NUMBER}"
