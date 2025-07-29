@@ -5,6 +5,7 @@ function App() {
   const [users, setUsers] = useState([]);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [health, setHealth] = useState('');
 
   const API_URL = import.meta.env.VITE_API_URL;
 
@@ -27,6 +28,13 @@ function App() {
   };
 
   useEffect(() => {
+      // Check backend health
+    fetch(`${API_URL}/api/health`)
+      .then(res => res.json())
+      .then(data => setHealth(data.status))
+      .catch(err => setHealth('Backend unavailable'));
+
+    // Fetch users
     fetchUsers();
   }, []);
 

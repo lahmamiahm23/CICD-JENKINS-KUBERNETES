@@ -19,22 +19,15 @@ spec:
         - containerPort: 5000
         env:
         - name: MONGODB_URI
-          value: "mongodb://mongo-service:27017/mernapp"
-        readinessProbe:
-          httpGet:
-            path: /
-            port: 5000
-          initialDelaySeconds: 10
-          periodSeconds: 5
+          value: "mongodb://mongo-service:27017/mernapp"       
         livenessProbe:
           httpGet:
-            path: /
+            path: /api/health
             port: 5000
-          initialDelaySeconds: 15
-          periodSeconds: 10
+          initialDelaySeconds: 30
+          periodSeconds: 10  
 
 ---
-
 apiVersion: v1
 kind: Service
 metadata:

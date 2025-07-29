@@ -32,7 +32,9 @@ app.post('/api/users', async (req, res) => {
   await newUser.save();
   res.json(newUser);
 });
-
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'Backend is running!' });
+});
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
