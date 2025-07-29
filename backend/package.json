@@ -12,7 +12,7 @@
   "version": "1.0.0",
   "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+     "test": "echo \"No backend tests implemented yet.\"", 
     "start":"nodemon server.js",
     "dev":"nodemon server.js"
   },
