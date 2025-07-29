@@ -14,14 +14,11 @@ spec:
         app: jenkins
     spec:
       serviceAccountName: jenkins
-      securityContext:
-        runAsUser: 0
-        fsGroup: 0
       containers:
         - name: jenkins
           image: anusiju/jenkins-with-node-docker:latest
           securityContext:
-            runAsUser: 0
+            runAsUser: 0  # Run as root to avoid permission issues
             privileged: true
           ports:
             - name: http-port
@@ -38,8 +35,6 @@ spec:
               mountPath: /var/jenkins_home
             - name: docker-sock
               mountPath: /var/run/docker.sock
-            - name: docker-bin
-              mountPath: /usr/bin/docker
           resources:
             requests:
               memory: "1Gi"
@@ -55,10 +50,6 @@ spec:
           hostPath:
             path: /var/run/docker.sock
             type: Socket
-        - name: docker-bin
-          hostPath:
-            path: /usr/bin/docker
-            type: File
 
 ---
 apiVersion: v1
