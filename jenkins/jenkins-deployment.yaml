@@ -19,6 +19,7 @@ spec:
           image: anusiju/jenkins-with-node-docker:latest  
           securityContext:
             runAsUser: 0
+            privileged: true 
           ports:
             - name: http-port
               containerPort: 8080
@@ -31,3 +32,16 @@ spec:
         - name: jenkins-home
           persistentVolumeClaim:
             claimName: jenkins-pvc
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: jenkins-pvc
+  namespace: jenkins
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: standard
