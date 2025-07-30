@@ -69,14 +69,17 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 script {
+                    // Fetch the current Minikube API server dynamically
+                    def KUBE_API = sh(script: "kubectl config view -o jsonpath='{.clusters[0].cluster.server}'", returnStdout: true).trim()
+
                     // Update image references in YAML files
                     sh """
                         sed -i 's|your-registry/mern-backend:latest|${DOCKER_REGISTRY}/mern-backend:${IMAGE_TAG}|g' k8s/backend-deployment.yaml
                         sed -i 's|your-registry/mern-frontend:latest|${DOCKER_REGISTRY}/mern-frontend:${IMAGE_TAG}|g' k8s/frontend-deployment.yaml
                     """
 
-                    // Use Minikube API server endpoint directly
-                    withKubeConfig([credentialsId: 'kubeconfig', serverUrl: 'https://host.docker.internal:54367', skipTlsVerify: true]) {
+                    // Use dynamic API endpoint for deployment
+                    withKubeConfig([credentialsId: 'kubeconfig', serverUrl: "${KUBE_API}", skipTlsVerify: true]) {
                         sh 'kubectl apply --validate=false -f k8s/'
                         sh 'kubectl rollout status deployment/backend-deployment'
                         sh 'kubectl rollout status deployment/frontend-deployment'
@@ -88,7 +91,9 @@ pipeline {
         stage('Verify Deployment') {
             steps {
                 script {
-                    withKubeConfig([credentialsId: 'kubeconfig', serverUrl: 'https://host.docker.internal:54367', skipTlsVerify: true]) {
+                    def KUBE_API = sh(script: "kubectl config view -o jsonpath='{.clusters[0].cluster.server}'", returnStdout: true).trim()
+
+                    withKubeConfig([credentialsId: 'kubeconfig', serverUrl: "${KUBE_API}", skipTlsVerify: true]) {
                         sh 'kubectl get pods'
                         sh 'kubectl get services'
                         sh 'kubectl wait --for=condition=ready pod -l app=backend --timeout=300s'
