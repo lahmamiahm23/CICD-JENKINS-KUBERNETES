@@ -4,7 +4,6 @@ metadata:
   name: frontend-deployment
 spec:
   replicas: 2
-  progressDeadlineSeconds: 600
   selector:
     matchLabels:
       app: frontend
@@ -15,24 +14,12 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: anusiju/mern-frontend:16   # ✅ Match the Jenkins pushed image tag
+        image: anusiju/mern-frontend:latest
         ports:
         - containerPort: 80
         env:
         - name: VITE_API_URL
           value: "http://backend-service:5000"
-        readinessProbe:                  # ✅ Added readiness probe
-          httpGet:
-            path: /
-            port: 80
-          initialDelaySeconds: 5
-          periodSeconds: 10
-        livenessProbe:                   # ✅ Added liveness probe
-          httpGet:
-            path: /
-            port: 80
-          initialDelaySeconds: 10
-          periodSeconds: 20
 
 ---
 apiVersion: v1
