@@ -13,7 +13,7 @@ pipeline {
                 git branch: 'main',
                     url: 'https://github.com/CodeEaseWithAnu/CI-CD-Jenkins-Pipeline.git',
                     credentialsId: 'github-credentials'
-                echo 'Code checked out successfully'
+                echo '✅ Code checked out successfully'
             }
         }
 
@@ -66,6 +66,18 @@ pipeline {
             }
         }
 
+        stage('Verify Kubernetes Connectivity') {
+            steps {
+                script {
+                    echo '🔍 Verifying Kubernetes cluster connectivity...'
+                    withKubeConfig([credentialsId: "${KUBECONFIG_CREDENTIAL}"]) {
+                        sh 'kubectl cluster-info'
+                        sh 'kubectl get nodes'
+                    }
+                }
+            }
+        }
+
         stage('Deploy to Kubernetes') {
             steps {
                 script {
@@ -75,11 +87,11 @@ pipeline {
                         sed -i 's|your-registry/mern-frontend:latest|${DOCKER_REGISTRY}/mern-frontend:${IMAGE_TAG}|g' k8s/frontend-deployment.yaml
                     """
 
-                    // Use kubectl proxy endpoint with validation disabled
-                    withKubeConfig([credentialsId: 'kubeconfig', serverUrl: 'http://host.docker.internal:8001']) {
-                        sh 'kubectl apply --validate=false -f k8s/'
-                        sh 'kubectl rollout status deployment/backend-deployment --validate=false'
-                        sh 'kubectl rollout status deployment/frontend-deployment --validate=false'
+                    // Apply manifests using kubeconfig
+                    withKubeConfig([credentialsId: "${KUBECONFIG_CREDENTIAL}"]) {
+                        sh 'kubectl apply -f k8s/'
+                        sh 'kubectl rollout status deployment/backend-deployment'
+                        sh 'kubectl rollout status deployment/frontend-deployment'
                     }
                 }
             }
@@ -88,11 +100,11 @@ pipeline {
         stage('Verify Deployment') {
             steps {
                 script {
-                    withKubeConfig([credentialsId: 'kubeconfig', serverUrl: 'http://host.docker.internal:8001']) {
-                        sh 'kubectl get pods --validate=false'
-                        sh 'kubectl get services --validate=false'
-                        sh 'kubectl wait --for=condition=ready pod -l app=backend --timeout=300s --validate=false'
-                        sh 'kubectl wait --for=condition=ready pod -l app=frontend --timeout=300s --validate=false'
+                    withKubeConfig([credentialsId: "${KUBECONFIG_CREDENTIAL}"]) {
+                        sh 'kubectl get pods'
+                        sh 'kubectl get services'
+                        sh 'kubectl wait --for=condition=ready pod -l app=backend --timeout=300s'
+                        sh 'kubectl wait --for=condition=ready pod -l app=frontend --timeout=300s'
                     }
                 }
             }
@@ -101,10 +113,10 @@ pipeline {
 
     post {
         success {
-            echo 'Pipeline completed successfully!'
+            echo '🎉 Pipeline completed successfully!'
         }
         failure {
-            echo 'Pipeline failed!'
+            echo '❌ Pipeline failed!'
         }
         always {
             sh 'docker system prune -f'
