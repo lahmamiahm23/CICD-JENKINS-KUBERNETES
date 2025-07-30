@@ -5,10 +5,20 @@ pipeline {
         DOCKER_REGISTRY = 'anusiju'
         IMAGE_TAG = "${BUILD_NUMBER}"
         KUBECONFIG_CREDENTIAL = 'kubeconfig'
-        MINIKUBE_IP = '172.17.0.2'  // Change dynamically if needed
     }
 
     stages {
+        stage('Get Minikube API URL') {
+            steps {
+                script {
+                    // Fetch Minikube IP and API server URL dynamically
+                    def kubeUrl = sh(script: "kubectl config view --minify -o jsonpath='{.clusters[0].cluster.server}'", returnStdout: true).trim()
+                    env.MINIKUBE_API_URL = kubeUrl
+                    echo "Minikube API URL: ${MINIKUBE_API_URL}"
+                }
+            }
+        }
+
         stage('Checkout') {
             steps {
                 git branch: 'main',
@@ -74,8 +84,7 @@ pipeline {
                         sed -i 's|your-registry/mern-backend:latest|${DOCKER_REGISTRY}/mern-backend:${IMAGE_TAG}|g' k8s/backend-deployment.yaml
                         sed -i 's|your-registry/mern-frontend:latest|${DOCKER_REGISTRY}/mern-frontend:${IMAGE_TAG}|g' k8s/frontend-deployment.yaml
                     """
-                    // Use kubectl proxy endpoint here
-                    withKubeConfig([credentialsId: 'kubeconfig', serverUrl: "http://${MINIKUBE_IP}:8001"]) {
+                    withKubeConfig([credentialsId: 'kubeconfig', serverUrl: "${MINIKUBE_API_URL}"]) {
                         sh 'kubectl apply --validate=false -f k8s/'
                         sh 'kubectl rollout status deployment/backend-deployment'
                         sh 'kubectl rollout status deployment/frontend-deployment'
@@ -87,7 +96,7 @@ pipeline {
         stage('Verify Deployment') {
             steps {
                 script {
-                    withKubeConfig([credentialsId: 'kubeconfig', serverUrl: "http://${MINIKUBE_IP}:8001"]) {
+                    withKubeConfig([credentialsId: 'kubeconfig', serverUrl: "${MINIKUBE_API_URL}"]) {
                         sh 'kubectl get pods'
                         sh 'kubectl get services'
                         sh 'kubectl wait --for=condition=ready pod -l app=backend --timeout=300s'
