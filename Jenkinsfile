@@ -8,17 +8,6 @@ pipeline {
     }
 
     stages {
-        stage('Get Minikube API URL') {
-            steps {
-                script {
-                    // Fetch Minikube IP and API server URL dynamically
-                    def kubeUrl = sh(script: "kubectl config view --minify -o jsonpath='{.clusters[0].cluster.server}'", returnStdout: true).trim()
-                    env.MINIKUBE_API_URL = kubeUrl
-                    echo "Minikube API URL: ${MINIKUBE_API_URL}"
-                }
-            }
-        }
-
         stage('Checkout') {
             steps {
                 git branch: 'main',
@@ -80,11 +69,13 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 script {
+                    // Replace image tags dynamically
                     sh """
                         sed -i 's|your-registry/mern-backend:latest|${DOCKER_REGISTRY}/mern-backend:${IMAGE_TAG}|g' k8s/backend-deployment.yaml
                         sed -i 's|your-registry/mern-frontend:latest|${DOCKER_REGISTRY}/mern-frontend:${IMAGE_TAG}|g' k8s/frontend-deployment.yaml
                     """
-                    withKubeConfig([credentialsId: 'kubeconfig', serverUrl: "${MINIKUBE_API_URL}"]) {
+                    // Apply K8s manifests using kubeconfig credentials directly
+                    withKubeConfig([credentialsId: 'kubeconfig']) {
                         sh 'kubectl apply --validate=false -f k8s/'
                         sh 'kubectl rollout status deployment/backend-deployment'
                         sh 'kubectl rollout status deployment/frontend-deployment'
@@ -96,7 +87,7 @@ pipeline {
         stage('Verify Deployment') {
             steps {
                 script {
-                    withKubeConfig([credentialsId: 'kubeconfig', serverUrl: "${MINIKUBE_API_URL}"]) {
+                    withKubeConfig([credentialsId: 'kubeconfig']) {
                         sh 'kubectl get pods'
                         sh 'kubectl get services'
                         sh 'kubectl wait --for=condition=ready pod -l app=backend --timeout=300s'
