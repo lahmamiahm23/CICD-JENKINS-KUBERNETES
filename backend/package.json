@@ -13,8 +13,8 @@
   "main": "server.js",
   "scripts": {
      "test": "echo \"No backend tests implemented yet.\"", 
-    "start":"nodemon server.js",
-    "dev":"nodemon server.js"
+    "start":"node server.js",
+    "dev":"node server.js"
   },
   "keywords": [],
   "author": "",

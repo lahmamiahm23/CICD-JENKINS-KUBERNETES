@@ -4,7 +4,7 @@ pipeline {
     environment {
         DOCKER_REGISTRY = 'anusiju'
         IMAGE_TAG = "${BUILD_NUMBER}"
-        KUBECONFIG_CREDENTIAL = 'kubeconfig'
+        KUBERNETES_SERVER = 'https://kubernetes.default.svc'  // ✅ In-cluster API
     }
 
     stages {
@@ -13,7 +13,6 @@ pipeline {
                 git branch: 'main',
                     url: 'https://github.com/CodeEaseWithAnu/CI-CD-Jenkins-Pipeline.git',
                     credentialsId: 'github-credentials'
-                echo '✅ Code checked out successfully'
             }
         }
 
@@ -35,9 +34,9 @@ pipeline {
             }
         }
 
-        stage('Build Docker Images') {
+        stage('Build & Push Docker Images') {
             parallel {
-                stage('Build Backend Image') {
+                stage('Backend Image') {
                     steps {
                         script {
                             dir('backend') {
@@ -50,7 +49,7 @@ pipeline {
                         }
                     }
                 }
-                stage('Build Frontend Image') {
+                stage('Frontend Image') {
                     steps {
                         script {
                             dir('frontend') {
@@ -69,11 +68,9 @@ pipeline {
         stage('Verify Kubernetes Connectivity') {
             steps {
                 script {
-                    echo '🔍 Verifying Kubernetes cluster connectivity...'
-                    withKubeConfig([credentialsId: "${KUBECONFIG_CREDENTIAL}"]) {
-                        sh 'kubectl cluster-info'
-                        sh 'kubectl get nodes'
-                    }
+                    echo '🔍 Verifying Kubernetes API (In-cluster ServiceAccount)...'
+                    sh 'kubectl cluster-info'
+                    sh 'kubectl get nodes -o wide'
                 }
             }
         }
@@ -81,18 +78,13 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 script {
-                    // Update image references in YAML files
                     sh """
                         sed -i 's|your-registry/mern-backend:latest|${DOCKER_REGISTRY}/mern-backend:${IMAGE_TAG}|g' k8s/backend-deployment.yaml
                         sed -i 's|your-registry/mern-frontend:latest|${DOCKER_REGISTRY}/mern-frontend:${IMAGE_TAG}|g' k8s/frontend-deployment.yaml
                     """
-
-                    // Apply manifests using kubeconfig
-                    withKubeConfig([credentialsId: "${KUBECONFIG_CREDENTIAL}"]) {
-                        sh 'kubectl apply -f k8s/'
-                        sh 'kubectl rollout status deployment/backend-deployment'
-                        sh 'kubectl rollout status deployment/frontend-deployment'
-                    }
+                    sh 'kubectl apply -f k8s/'
+                    sh 'kubectl rollout status deployment/backend-deployment'
+                    sh 'kubectl rollout status deployment/frontend-deployment'
                 }
             }
         }
@@ -100,26 +92,18 @@ pipeline {
         stage('Verify Deployment') {
             steps {
                 script {
-                    withKubeConfig([credentialsId: "${KUBECONFIG_CREDENTIAL}"]) {
-                        sh 'kubectl get pods'
-                        sh 'kubectl get services'
-                        sh 'kubectl wait --for=condition=ready pod -l app=backend --timeout=300s'
-                        sh 'kubectl wait --for=condition=ready pod -l app=frontend --timeout=300s'
-                    }
+                    sh 'kubectl get pods -o wide'
+                    sh 'kubectl get services'
+                    sh 'kubectl wait --for=condition=ready pod -l app=backend --timeout=300s'
+                    sh 'kubectl wait --for=condition=ready pod -l app=frontend --timeout=300s'
                 }
             }
         }
     }
 
     post {
-        success {
-            echo '🎉 Pipeline completed successfully!'
-        }
-        failure {
-            echo '❌ Pipeline failed!'
-        }
-        always {
-            sh 'docker system prune -f'
-        }
+        success { echo '🎉 Pipeline completed successfully!' }
+        failure { echo '❌ Pipeline failed!' }
+        always { sh 'docker system prune -f' }
     }
 }
