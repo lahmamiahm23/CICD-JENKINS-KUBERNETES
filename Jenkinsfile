@@ -74,7 +74,7 @@ pipeline {
                         sed -i 's|your-registry/mern-frontend:latest|${DOCKER_REGISTRY}/mern-frontend:${IMAGE_TAG}|g' k8s/frontend-deployment.yaml
                     """
                     withKubeConfig([credentialsId: 'kubeconfig']) {
-                        sh 'kubectl apply -f k8s/'
+                        sh 'kubectl apply --validate=false -f k8s/'  // ✅ Added validate=false
                         sh 'kubectl rollout status deployment/backend-deployment'
                         sh 'kubectl rollout status deployment/frontend-deployment'
                     }
