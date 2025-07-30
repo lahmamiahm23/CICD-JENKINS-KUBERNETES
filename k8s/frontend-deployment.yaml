@@ -15,22 +15,22 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: anusiju/mern-frontend:16   # ✅ Match the Jenkins pushed image tag
+        image: anusiju/mern-frontend:20  # ✅ Update to the new tag built with serve
         ports:
-        - containerPort: 80
+        - containerPort: 3000           # ✅ serve listens on 3000
         env:
         - name: VITE_API_URL
           value: "http://backend-service:5000"
-        readinessProbe:                  # ✅ Added readiness probe
+        readinessProbe:
           httpGet:
             path: /
-            port: 80
+            port: 3000                  # ✅ Change probe port
           initialDelaySeconds: 5
           periodSeconds: 10
-        livenessProbe:                   # ✅ Added liveness probe
+        livenessProbe:
           httpGet:
             path: /
-            port: 80
+            port: 3000                  # ✅ Change probe port
           initialDelaySeconds: 10
           periodSeconds: 20
 
@@ -43,6 +43,6 @@ spec:
   selector:
     app: frontend
   ports:
-  - port: 80
-    targetPort: 80
+  - port: 3000
+    targetPort: 3000                   # ✅ Match serve port
   type: LoadBalancer
