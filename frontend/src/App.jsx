@@ -40,7 +40,7 @@ function App() {
 
   return (
     <div className="App">
-      <h1>User Manager</h1>
+      <h1>User Manager Details</h1>
       <form onSubmit={addUser}>
         <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" required />
         <br></br>
