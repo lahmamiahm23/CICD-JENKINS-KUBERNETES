@@ -75,11 +75,11 @@ pipeline {
                         sed -i 's|your-registry/mern-frontend:latest|${DOCKER_REGISTRY}/mern-frontend:${IMAGE_TAG}|g' k8s/frontend-deployment.yaml
                     """
 
-                    // Use kubectl proxy endpoint
-                    withKubeConfig([credentialsId: 'kubeconfig', serverUrl: 'http://host.docker.internal:8001', skipTlsVerify: true]) {
+                    // Use kubectl proxy endpoint with validation disabled
+                    withKubeConfig([credentialsId: 'kubeconfig', serverUrl: 'http://host.docker.internal:8001']) {
                         sh 'kubectl apply --validate=false -f k8s/'
-                        sh 'kubectl rollout status deployment/backend-deployment'
-                        sh 'kubectl rollout status deployment/frontend-deployment'
+                        sh 'kubectl rollout status deployment/backend-deployment --validate=false'
+                        sh 'kubectl rollout status deployment/frontend-deployment --validate=false'
                     }
                 }
             }
@@ -88,11 +88,11 @@ pipeline {
         stage('Verify Deployment') {
             steps {
                 script {
-                    withKubeConfig([credentialsId: 'kubeconfig', serverUrl: 'http://host.docker.internal:8001', skipTlsVerify: true]) {
-                        sh 'kubectl get pods'
-                        sh 'kubectl get services'
-                        sh 'kubectl wait --for=condition=ready pod -l app=backend --timeout=300s'
-                        sh 'kubectl wait --for=condition=ready pod -l app=frontend --timeout=300s'
+                    withKubeConfig([credentialsId: 'kubeconfig', serverUrl: 'http://host.docker.internal:8001']) {
+                        sh 'kubectl get pods --validate=false'
+                        sh 'kubectl get services --validate=false'
+                        sh 'kubectl wait --for=condition=ready pod -l app=backend --timeout=300s --validate=false'
+                        sh 'kubectl wait --for=condition=ready pod -l app=frontend --timeout=300s --validate=false'
                     }
                 }
             }
