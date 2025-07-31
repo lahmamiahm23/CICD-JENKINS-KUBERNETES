@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_REGISTRY = 'anusiju'
+        DOCKER_REGISTRY = 'your-docker-registry'
         IMAGE_TAG = "${BUILD_NUMBER}"
         KUBERNETES_SERVER = 'https://kubernetes.default.svc'  
     }
@@ -11,7 +11,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 git branch: 'main',
-                    url: 'https://github.com/CodeEaseWithAnu/CI-CD-Jenkins-Pipeline.git',
+                    url: 'your-git-repository-url',
                     credentialsId: 'github-credentials'
             }
         }

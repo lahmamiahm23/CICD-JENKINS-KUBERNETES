@@ -19,7 +19,7 @@ spec:
         fsGroup: 0
       containers:
         - name: jenkins
-          image: anusiju/jenkins-with-node-docker:latest
+          image: your-docker-registry/jenkins-with-node-docker:latest
           securityContext:
             runAsUser: 0
             privileged: true

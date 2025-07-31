@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: backend
-        image: anusiju/mern-backend:latest
+        image: your-docker-registry/mern-backend:latest
         ports:
         - containerPort: 5000
         env:

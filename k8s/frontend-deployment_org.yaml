@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: anusiju/mern-frontend:latest
+        image: your-docker-registry/mern-frontend:latest
         ports:
         - containerPort: 3000
         env:
