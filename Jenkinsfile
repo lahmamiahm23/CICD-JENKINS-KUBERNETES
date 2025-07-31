@@ -4,7 +4,7 @@ pipeline {
     environment {
         DOCKER_REGISTRY = 'anusiju'
         IMAGE_TAG = "${BUILD_NUMBER}"
-        KUBERNETES_SERVER = 'https://kubernetes.default.svc'  // ✅ In-cluster API
+        KUBERNETES_SERVER = 'https://kubernetes.default.svc'  
     }
 
     stages {
