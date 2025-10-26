@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_REGISTRY = 'your-docker-registry'
+        DOCKER_REGISTRY = 'med293475'
         IMAGE_TAG = "${BUILD_NUMBER}"
         KUBERNETES_SERVER = 'https://kubernetes.default.svc'  
     }
