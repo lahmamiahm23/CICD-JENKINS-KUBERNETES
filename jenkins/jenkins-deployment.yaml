@@ -19,7 +19,7 @@ spec:
         fsGroup: 0
       containers:
         - name: jenkins
-          image: your-docker-registry/jenkins-with-node-docker:latest
+          image: jenkins/jenkins:lts
           securityContext:
             runAsUser: 0
             privileged: true
