@@ -11,7 +11,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 git branch: 'main',
-                    url: 'your-git-repository-url',
+                    url: 'https://github.com/lahmamiahm23/CICD-JENKINS-KUBERNETES.git',
                     credentialsId: 'github-credentials'
             }
         }

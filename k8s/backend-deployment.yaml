@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: backend
-        image: your-docker-registry/mern-backend:latest
+        image: med293475/mern-backend:latest
         ports:
         - containerPort: 5000
         env:

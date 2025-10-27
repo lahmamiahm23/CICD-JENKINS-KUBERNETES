@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: your-docker-registry/mern-frontend:latest
+        image: med293475/mern-frontend:latest
         ports:
         - containerPort: 3000
         env:
